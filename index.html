@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Displayed Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://d3js.org/d3.v5.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.css">
+    <style type="text/css">
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script src="./colorbrewer.v1.min.js" charset="utf-8"></script>
+    <script type="text/javascript">
+        const source = "https://www.comeetie.fr/tileserver-php/tileserver.php?/inseedata2023full.json";
+        const style = './style.json';
+
+        var mylayers = [{
+            coloramp:
+                ['step',
+                    ['/',
+                        ['to-number',
+                            ['get', 'men_pauv']
+                        ],
+                        ['to-number',
+                            ['get', 'men']
+                        ]
+                    ],
+                    "#009571"
+                ],
+            quantiles: [0.00000000, 0.02, 0.04545455, 0.07142857, 0.09677419, 0.12500000, 0.15384615, 0.20000000, 0.25000000],
+            cols: colorbrewer["BuPu"][9],
+            name: "basr",
+            visibility: 'none',
+            text: 'ménages pauvres (%)',
+            format: function (d) { return Math.round(d * 100) }
+        }, {
+            coloramp:
+                ['step',
+                    ['/',
+                        ['to-number',
+                            ['get', 'men_prop']
+                        ],
+                        ['to-number',
+                            ['get', 'men']
+                        ]
+                    ],
+                    "#009571"
+                ],
+            // TODO - change this (process this precisely)
+            quantiles: [0.00000000, 0.02, 0.04545455, 0.07142857, 0.09677419, 0.12500000, 0.15384615, 0.20000000, 0.25000000],
+            cols: colorbrewer["Reds"][9],
+            name: "basr",
+            visibility: 'none',
+            text: 'ménages propriétaires (%)',
+            format: function (d) { return Math.round(d * 100) }
+        }]
+
+        const map = new maplibregl.Map({
+            container: 'map', // container id
+            style: style, // style file (json)
+            center: [2.35, 48.86], // starting position [lng, lat] (center on Paris)
+            zoom: 10, // starting zoom
+            attributionControl: false
+        });
+
+        map.on('load', function () {
+            // Add the source to the map
+            map.addSource('tuiles-insee-data', {
+                type: 'vector',
+                url: source,
+            });
+            // Define indexes of layers
+            const indexes = ['Pauvres', 'Proprio'];
+            var i = 0;
+            // For each configuration
+            mylayers.forEach(function (l) {
+                console.log(l);
+                // Add for each quantiles its color and value in 'coloramp'
+                l.quantiles.forEach(function (q, i) { l.coloramp.push(q); l.coloramp.push(l.cols[i]) })
+                map.addLayer({
+                    'id': indexes[i],
+                    'type': 'fill',
+                    'source': 'tuiles-insee-data',
+                    'source-layer': 'inseedata2023full',
+                    'paint': {
+                        "fill-color": l.coloramp,
+                        'fill-opacity': 1
+                    },
+                    'layout': {
+                        'visibility': 'none'
+                    }
+                });
+                i++;
+            });
+        });
+
+        // Change layer of the map
+        map.on('mouseenter', function () {
+            const clickedLayer = this.textContent;
+            map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+        });
+
+        console.log(mylayers);
+
+        // mylayers.forEach(function (l) {
+        //     ld = d3.select("#layers-controls").append("div")
+        //         .attr("class", "form-check")
+        //         .attr("id", l.name + "-div")
+        //         .style("display", "none")
+
+        //     ld.append("input")
+        //         .attr("class", "form-check-input")
+        //         .attr("type", "checkbox")
+        //         .attr("value", "")
+        //         .attr("id", l.name)
+        //         .attr("onchange", "updateLayers()")
+
+        //     ld.append("label")
+        //         .attr("class", "form-check-label")
+        //         .attr("for", l.name)
+        //         .text(l.text)
+
+        //     ld.append("div")
+        //         .attr("class", "legend-group")
+        //         .attr("id", l.name + '-leg')
+        // })
+
+    </script>
+</body>
+
+</html>
