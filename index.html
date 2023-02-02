@@ -20,128 +20,267 @@
             bottom: 0;
             width: 100%;
         }
+
+        .dropbtn {
+            background-color: #3498DB;
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropbtn:hover, .dropbtn:focus {
+            background-color: #2980B9;
+        }
+
+        .pauvbtn {
+            color: black;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            min-width: 160px;
+            cursor: pointer;
+        }
+
+        .pauvbtn:focus {
+            background-color: #2980B9;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            z-index: 1
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f1f1f1;
+            min-width: 160px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown a:hover {
+            background-color: #ddd;
+        }
+
+        .show {
+            display: block;
+        }
+
     </style>
 </head>
 
 <body>
+<div class="parent">
     <div id="map"></div>
-    <script src="./colorbrewer.v1.min.js" charset="utf-8"></script>
-    <script type="text/javascript">
-        const source = "https://www.comeetie.fr/tileserver-php/tileserver.php?/inseedata2023full.json";
-        const style = './style.json';
 
-        var mylayers = [{
-            coloramp:
-                ['step',
-                    ['/',
-                        ['to-number',
-                            ['get', 'men_pauv']
-                        ],
-                        ['to-number',
-                            ['get', 'men']
-                        ]
+    <div class="dropdown">
+        <button onclick="myFunction()" class="dropbtn">Add layer</button>
+        <div id="myDropdown" class="dropdown-content">
+            <button onclick="handlePauvLayer()" class="pauvbtn">Pauv layer</button>
+            <button onclick="handlePropLayer()" class="pauvbtn">Prop layer</button>
+        </div>
+    </div>
+
+</div>
+
+
+<script src="./colorbrewer.v1.min.js" charset="utf-8"></script>
+<script type="text/javascript">
+    const source = "https://www.comeetie.fr/tileserver-php/tileserver.php?/inseedata2023full.json";
+    const style = './style.json';
+
+    var mylayers = [{
+        coloramp:
+            ['step',
+                ['/',
+                    ['to-number',
+                        ['get', 'men_pauv']
                     ],
-                    "#009571"
+                    ['to-number',
+                        ['get', 'men']
+                    ]
                 ],
-            quantiles: [0.00000000, 0.02, 0.04545455, 0.07142857, 0.09677419, 0.12500000, 0.15384615, 0.20000000, 0.25000000],
-            cols: colorbrewer["BuPu"][9],
-            name: "basr",
-            visibility: 'none',
-            text: 'ménages pauvres (%)',
-            format: function (d) { return Math.round(d * 100) }
-        }, {
-            coloramp:
-                ['step',
-                    ['/',
-                        ['to-number',
-                            ['get', 'men_prop']
-                        ],
-                        ['to-number',
-                            ['get', 'men']
-                        ]
+                "#009571"
+            ],
+        quantiles: [0.00000000, 0.02, 0.04545455, 0.07142857, 0.09677419, 0.12500000, 0.15384615, 0.20000000, 0.25000000],
+        cols: colorbrewer["BuPu"][9],
+        name: "basr",
+        visibility: 'none',
+        text: 'ménages pauvres (%)',
+        format: function (d) {
+            return Math.round(d * 100)
+        }
+    }, {
+        coloramp:
+            ['step',
+                ['/',
+                    ['to-number',
+                        ['get', 'men_prop']
                     ],
-                    "#009571"
+                    ['to-number',
+                        ['get', 'men']
+                    ]
                 ],
-            // TODO - change this (process this precisely)
-            quantiles: [0.00000000, 0.02, 0.04545455, 0.07142857, 0.09677419, 0.12500000, 0.15384615, 0.20000000, 0.25000000],
-            cols: colorbrewer["Reds"][9],
-            name: "basr",
-            visibility: 'none',
-            text: 'ménages propriétaires (%)',
-            format: function (d) { return Math.round(d * 100) }
-        }]
+                "#009571"
+            ],
+        // TODO - change this (process this precisely)
+        quantiles: [0.00000000, 0.02, 0.04545455, 0.07142857, 0.09677419, 0.12500000, 0.15384615, 0.20000000, 0.25000000],
+        cols: colorbrewer["Reds"][9],
+        name: "basr",
+        visibility: 'none',
+        text: 'ménages propriétaires (%)',
+        format: function (d) {
+            return Math.round(d * 100)
+        }
+    }]
 
-        const map = new maplibregl.Map({
-            container: 'map', // container id
-            style: style, // style file (json)
-            center: [2.35, 48.86], // starting position [lng, lat] (center on Paris)
-            zoom: 10, // starting zoom
-            attributionControl: false
+    const map = new maplibregl.Map({
+        container: 'map', // container id
+        style: style, // style file (json)
+        center: [2.35, 48.86], // starting position [lng, lat] (center on Paris)
+        zoom: 10, // starting zoom
+        attributionControl: false
+    });
+
+    map.on('load', function () {
+        // Add the source to the map
+        map.addSource('tuiles-insee-data', {
+            type: 'vector',
+            url: source,
         });
-
-        map.on('load', function () {
-            // Add the source to the map
-            map.addSource('tuiles-insee-data', {
-                type: 'vector',
-                url: source,
+        // Define indexes of layers
+        const indexes = ['Pauvres', 'Proprio'];
+        var i = 0;
+        // For each configuration
+        mylayers.forEach(function (l) {
+            console.log(l);
+            // Add for each quantiles its color and value in 'coloramp'
+            l.quantiles.forEach(function (q, i) {
+                l.coloramp.push(q);
+                l.coloramp.push(l.cols[i])
+            })
+            map.addLayer({
+                'id': indexes[i],
+                'type': 'fill',
+                'source': 'tuiles-insee-data',
+                'source-layer': 'inseedata2023full',
+                'paint': {
+                    "fill-color": l.coloramp,
+                    'fill-opacity': 1
+                },
+                'layout': {
+                    'visibility': 'none'
+                }
             });
-            // Define indexes of layers
-            const indexes = ['Pauvres', 'Proprio'];
-            var i = 0;
-            // For each configuration
-            mylayers.forEach(function (l) {
-                console.log(l);
-                // Add for each quantiles its color and value in 'coloramp'
-                l.quantiles.forEach(function (q, i) { l.coloramp.push(q); l.coloramp.push(l.cols[i]) })
-                map.addLayer({
-                    'id': indexes[i],
-                    'type': 'fill',
-                    'source': 'tuiles-insee-data',
-                    'source-layer': 'inseedata2023full',
-                    'paint': {
-                        "fill-color": l.coloramp,
-                        'fill-opacity': 1
-                    },
-                    'layout': {
-                        'visibility': 'none'
-                    }
-                });
-                i++;
-            });
+            i++;
         });
+    });
 
-        // Change layer of the map
-        map.on('mouseenter', function () {
-            const clickedLayer = this.textContent;
-            map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
-        });
+    // Change layer of the map
+    map.on('mouseenter', function () {
+        const clickedLayer = this.textContent;
+        map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+    });
 
-        console.log(mylayers);
+    function handlePauvLayer() {
+        const clickedLayer = map.getLayer("Pauvres");
+        console.log("clicked layer is :", clickedLayer)
+        const visibility = map.getLayoutProperty(
+            clickedLayer.id,
+            'visibility'
+        );
+        console.log("visibility:", visibility)
+        // Toggle layer visibility by changing the layout object's visibility property.
+        if (visibility === 'visible') {
+            map.setLayoutProperty(clickedLayer.id, 'visibility', 'none');
+        } else {
+            map.setLayoutProperty(
+                clickedLayer.id,
+                'visibility',
+                'visible'
+            );
+        }
+    }
 
-        // mylayers.forEach(function (l) {
-        //     ld = d3.select("#layers-controls").append("div")
-        //         .attr("class", "form-check")
-        //         .attr("id", l.name + "-div")
-        //         .style("display", "none")
+    function handlePropLayer() {
+        const clickedLayer = map.getLayer("Proprio");
+        console.log("clicked layer is :", clickedLayer)
+        const visibility = map.getLayoutProperty(
+            clickedLayer.id,
+            'visibility'
+        );
+        console.log("visibility:", visibility)
+        // Toggle layer visibility by changing the layout object's visibility property.
+        if (visibility === 'visible') {
+            map.setLayoutProperty(clickedLayer.id, 'visibility', 'none');
+        } else {
+            map.setLayoutProperty(
+                clickedLayer.id,
+                'visibility',
+                'visible'
+            );
+        }
 
-        //     ld.append("input")
-        //         .attr("class", "form-check-input")
-        //         .attr("type", "checkbox")
-        //         .attr("value", "")
-        //         .attr("id", l.name)
-        //         .attr("onchange", "updateLayers()")
+    }
 
-        //     ld.append("label")
-        //         .attr("class", "form-check-label")
-        //         .attr("for", l.name)
-        //         .text(l.text)
+    console.log(mylayers);
 
-        //     ld.append("div")
-        //         .attr("class", "legend-group")
-        //         .attr("id", l.name + '-leg')
-        // })
+    /* When the user clicks on the button,
+toggle between hiding and showing the dropdown content */
+    function myFunction() {
+        document.getElementById("myDropdown").classList.toggle("show");
+    }
 
-    </script>
+    // Close the dropdown if the user clicks outside of it
+    window.onclick = function (event) {
+        if (!event.target.matches('.dropbtn')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            var i;
+            for (i = 0; i < dropdowns.length; i++) {
+                var openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+
+    // mylayers.forEach(function (l) {
+    //     ld = d3.select("#layers-controls").append("div")
+    //         .attr("class", "form-check")
+    //         .attr("id", l.name + "-div")
+    //         .style("display", "none")
+
+    //     ld.append("input")
+    //         .attr("class", "form-check-input")
+    //         .attr("type", "checkbox")
+    //         .attr("value", "")
+    //         .attr("id", l.name)
+    //         .attr("onchange", "updateLayers()")
+
+    //     ld.append("label")
+    //         .attr("class", "form-check-label")
+    //         .attr("for", l.name)
+    //         .text(l.text)
+
+    //     ld.append("div")
+    //         .attr("class", "legend-group")
+    //         .attr("id", l.name + '-leg')
+    // })
+
+</script>
 </body>
 
 </html>
